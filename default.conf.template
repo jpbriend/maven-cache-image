@@ -27,11 +27,21 @@ map $request_uri $skip_cache {
   default 0;
 }
 
+upstream backend_jenkins {
+  server repo.jenkins-ci.org:80 max_fails=4;
+  server repo.jenkins-ci.org:80 max_fails=4;
+  server repo.jenkins-ci.org:80 max_fails=4;
+  server repo.jenkins-ci.org:80 max_fails=4;
+  least_conn;
+  zone backend_jenkins 64k;
+  keepalive 32;
+}
+
 upstream backend_central {
-  server repo.maven.apache.org:443 max_fails=4;
-  server repo.maven.apache.org:443 max_fails=4;
-  server repo.maven.apache.org:443 max_fails=4;
-  server repo.maven.apache.org:443 max_fails=4;
+  server repo.maven.apache.org:80 max_fails=4;
+  server repo.maven.apache.org:80 max_fails=4;
+  server repo.maven.apache.org:80 max_fails=4;
+  server repo.maven.apache.org:80 max_fails=4;
   least_conn;
   zone backend_central 64k;
   keepalive 32;
@@ -71,10 +81,17 @@ server {
 
   location /mirrors/central {
     proxy_cache $cache;
-    proxy_pass https://backend_central/maven2;
+    proxy_pass http://backend_central/maven2;
     proxy_set_header Host "repo.maven.apache.org";
     proxy_set_header Connection "";
     proxy_http_version 1.1;
   }
 
+  location /mirrors/jenkins {
+    proxy_cache $cache;
+    proxy_pass http://backend_jenkins/public;
+    proxy_set_header Host "repo.jenkins-ci.org";
+    proxy_set_header Connection "";
+    proxy_http_version 1.1;
+  }
 }
